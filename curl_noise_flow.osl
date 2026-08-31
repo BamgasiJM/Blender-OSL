@@ -1,0 +1,77 @@
+// 06_curl_noise_flow.osl
+//
+// 컬 노이즈(Curl Noise): 스칼라 노이즈(포텐셜 함수)의 편미분으로부터 회전하는
+// 벡터장을 유도하는 기법입니다. 이렇게 만든 벡터장은 항상 발산(divergence)이 0이
+// 되는 성질이 있어, 유체나 연기처럼 자연스럽게 소용돌이치는 흐름을 만드는 데
+// 널리 쓰입니다 (파티클 이동 방향, 헤어/펄 흐름 등에도 활용됩니다).
+//
+// [필요 노드]
+// 1. Texture Coordinate 노드의 Generated 출력을 Script 노드의 Position 소켓에 연결
+// 2. Script 노드의 Color 출력을 Emission 노드에 연결 (강한 색 대비를 위해
+//    Emission Strength를 1.0 이상으로 올리는 것을 권장합니다)
+
+// 컬 벡터장을 유도할 기반 스칼라 필드(포텐셜 함수)입니다.
+float potential(point p)
+{
+    return snoise(p);
+}
+
+// 2D 컬(curl)을 유한 차분(finite difference)으로 근사합니다.
+// curl = (dPsi/dy, -dPsi/dx) 형태의 벡터는 등고선을 따라 회전하는 방향을 가지므로
+// 결과적으로 소용돌이치는 흐름이 만들어집니다.
+vector curl_noise(point p)
+{
+    float eps = 0.05;
+    float n1 = potential(point(p[0], p[1] + eps, p[2]));
+    float n2 = potential(point(p[0], p[1] - eps, p[2]));
+    float n3 = potential(point(p[0] + eps, p[1], p[2]));
+    float n4 = potential(point(p[0] - eps, p[1], p[2]));
+
+    float dPsi_dy = (n1 - n2) / (2.0 * eps);
+    float dPsi_dx = (n3 - n4) / (2.0 * eps);
+
+    return vector(dPsi_dy, -dPsi_dx, 0.0);
+}
+
+// 각도(-PI~PI)를 0~1로 정규화한 뒤 세 채널에 120도씩 위상차를 주어
+// 채도 높은 무지개색을 만드는 팔레트 함수입니다.
+color angle_to_rainbow(float angle)
+{
+    float t = (angle / 6.28318) + 0.5;
+    return color(
+        0.5 + 0.5 * cos(6.28318 * (t + 0.0)),
+        0.5 + 0.5 * cos(6.28318 * (t + 0.333)),
+        0.5 + 0.5 * cos(6.28318 * (t + 0.667))
+    );
+}
+
+shader curl_noise_flow(
+    point Position = P,
+    float Scale = 3.0,
+    float WarpStrength = 2.0,
+    int PosterizeSteps = 5,   // 0이면 부드러운 그라데이션, 1 이상이면 밝기를 계단식으로 끊어 대비를 강조
+    output color Color = color(0.0, 0.0, 0.0)
+)
+{
+    point p = Position * Scale;
+    vector flow = curl_noise(p);
+
+    // 컬 벡터 방향으로 좌표를 한 번 더 왜곡한 뒤 노이즈를 샘플링하면
+    // 흐름을 따라 흘러가는 듯한 리본 무늬(디테일)가 만들어집니다.
+    point warped = p + flow * WarpStrength;
+    float detail = noise(warped * 2.0);
+
+    float angle = atan2(flow[1], flow[0]);
+    float magnitude = clamp(length(flow) * 1.5, 0.0, 1.0);
+
+    color hue = angle_to_rainbow(angle);
+    float value = mix(0.3, 1.0, magnitude) * mix(0.6, 1.0, detail);
+
+    if (PosterizeSteps > 0) {
+        // 값을 몇 단계로 끊어서(posterize) 부드러운 그라데이션 대신
+        // 또렷한 색 경계를 만들어 화려하고 대비가 강한 그래픽 느낌을 냅니다.
+        value = floor(value * PosterizeSteps) / PosterizeSteps;
+    }
+
+    Color = hue * value;
+}

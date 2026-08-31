@@ -1,0 +1,37 @@
+// 05_polar_spiral.osl
+//
+// 직교 좌표(x, y)를 극좌표(radius, angle)로 변환한 뒤, 각도와 반지름을
+// 함께 이용해 나선(spiral) 줄무늬를 만드는 기법입니다. atan2()로 각도를
+// 구하는 것이 절차형 아트에서 소용돌이/방사형 패턴을 만들 때 가장 기본이 되는 접근입니다.
+//
+// [필요 노드]
+// 1. Texture Coordinate 노드의 Generated 출력을 Script 노드의 Position 소켓에 연결
+// 2. (선택) 애니메이션을 원하면 Value 노드에 #frame/30 드라이버를 걸고
+//    Script 노드의 Time 소켓에 연결하면 나선이 회전하는 효과가 만들어집니다.
+// 3. Script 노드의 Color 출력을 Emission/Principled BSDF에 연결
+
+shader polar_spiral(
+    point Position = P,
+    float Time = 0.0,
+    float Arms = 5.0,     // 나선 팔(줄무늬) 개수
+    float Twist = 8.0,    // 나선이 얼마나 급하게 꼬이는지
+    float Speed = 1.0,
+    color ColorA = color(0.05, 0.0, 0.1),
+    color ColorB = color(0.9, 0.6, 1.0),
+    output color Color = color(0.0, 0.0, 0.0)
+)
+{
+    // 중심을 (0,0,0)으로 이동합니다. point - point는 vector를 반환합니다.
+    vector centered = Position - point(0.5, 0.5, 0.5);
+
+    float radius = length(centered);
+    // atan2(y, x)는 원점을 기준으로 -PI ~ PI 범위의 각도를 반환합니다 (x축이 0도 기준).
+    float angle = atan2(centered[1], centered[0]);
+
+    // 각도에 팔 개수(Arms)를 곱하고, 반지름에 꼬임 강도(Twist)를 곱해 더하면
+    // 반지름이 커질수록 줄무늬가 각도 방향으로 점점 밀려나면서 나선 형태가 만들어집니다.
+    float stripe = sin(angle * Arms + radius * Twist - Time * Speed);
+
+    float t = stripe * 0.5 + 0.5;
+    Color = mix(ColorA, ColorB, t);
+}

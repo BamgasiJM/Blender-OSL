@@ -1,0 +1,45 @@
+// 01_fbm_noise_basic.osl
+//
+// fBm(Fractal Brownian Motion) 노이즈의 가장 기본적인 형태입니다.
+// 여러 옥타브(octave)의 노이즈를 주파수는 점점 높이고 진폭은 점점 낮춰가며
+// 겹겹이 합산하는 것이 fBm의 핵심 원리이며, 대부분의 절차적 텍스처(구름, 지형,
+// 대리석 등)가 이 구조를 기반으로 만들어집니다.
+//
+// [필요 노드]
+// 1. Shader Editor -> Add -> Script -> Mode: External, File Path에 이 파일 지정
+// 2. Texture Coordinate 노드의 Generated 출력을 Script 노드의 Position 소켓에 연결
+//    (연결하지 않으면 기본값 P(월드 스페이스 좌표)가 쓰여, 오브젝트를 이동시킬 때
+//    패턴이 표면에 고정되지 않고 함께 움직입니다)
+// 3. Script 노드의 Color 출력을 Emission 노드(또는 Principled BSDF의 Base Color)에 연결
+
+shader fbm_noise_basic(
+    point Position = P,
+    float Scale = 4.0,
+    int Octaves = 4,
+    color ColorLow = color(0.05, 0.05, 0.1),
+    color ColorHigh = color(1.0, 0.9, 0.6),
+    output color Color = color(0.0, 0.0, 0.0)
+)
+{
+    point p = Position * Scale;
+
+    float value = 0.0;
+    float amplitude = 0.5;
+    float frequency = 1.0;
+    int i;
+
+    // 옥타브를 반복할 때마다 주파수는 2배로 올리고 진폭은 절반으로 줄여서 더합니다.
+    // 이렇게 하면 큰 형태(저주파, 큰 진폭) 위에 세밀한 디테일(고주파, 작은 진폭)이
+    // 겹쳐지면서 자연스러운 질감이 만들어집니다.
+    for (i = 0; i < Octaves; i += 1) {
+        value += amplitude * noise(p * frequency);
+        frequency *= 2.0;
+        amplitude *= 0.5;
+    }
+
+    // noise()는 0~1 범위의 무부호(unsigned) 노이즈를 반환합니다.
+    // 부호 있는 노이즈(-1~1)가 필요하면 snoise()를 대신 사용하면 됩니다.
+    value = clamp(value, 0.0, 1.0);
+
+    Color = mix(ColorLow, ColorHigh, value);
+}

@@ -1,0 +1,69 @@
+// 08_dendritic_veins.osl
+//
+// 확산 제한 응집(DLA, Diffusion-Limited Aggregation)이 만들어내는 나뭇가지/번개
+// 형태의 수지상(dendritic) 구조를 흉내내는 셰이더입니다.
+//
+// [중요한 한계]
+// 진짜 DLA는 무작위로 떠도는 입자가 이미 뭉친 구조에 닿으면 달라붙는 과정을
+// 수천~수백만 번 반복하는 "시간에 따른 순차적 시뮬레이션"입니다. 반면 OSL 셰이더는
+// 각 셰이딩 포인트를 다른 픽셀의 이전 상태와 무관하게 독립적으로, 한 번에 계산하는
+// 상태 없는(stateless) 구조라서, 이런 순차적 응집 과정을 셰이더 한 번의 실행만으로
+// 그대로 재현할 수는 없습니다. 대신 여기서는 리지드 멀티프랙탈(Ridged Multifractal,
+// Musgrave 기법) 노이즈로 비슷한 "가지 치며 뻗어나가는" 시각적 느낌만 절차적으로
+// 흉내냅니다 (진짜 DLA 시뮬레이션 결과를 텍스처로 구워서 Image Texture 노드로
+// 불러오는 방식이 훨씬 정확합니다).
+//
+// [필요 노드]
+// 1. Texture Coordinate 노드의 Generated 출력을 Script 노드의 Position 소켓에 연결
+// 2. Script 노드의 Color 출력을 Emission 노드에 연결 (Intensity를 높여
+//    Emission Strength와 함께 쓰면 네온처럼 빛나는 균열/번개 효과가 됩니다)
+
+float ridge_fbm(point p, int octaves)
+{
+    float value = 0.0;
+    float amplitude = 0.5;
+    float frequency = 1.0;
+    float weight = 1.0;
+    int i;
+
+    for (i = 0; i < octaves; i += 1) {
+        float n = snoise(p * frequency);
+
+        // snoise()는 -1~1 범위이므로, 0 근처(등고선의 경계)에서 1 - abs(n)의 값이
+        // 뾰족하게 1에 가까워집니다. 이 뾰족한 능선(ridge)이 얇은 선처럼 보이는 것이
+        // 리지드 노이즈의 핵심 원리입니다.
+        float r = 1.0 - abs(n);
+        r = r * r;       // 제곱해서 능선을 더 날카롭고 가늘게 만듦
+
+        // 직전 옥타브의 결과값으로 다음 옥타브의 기여도를 조절합니다.
+        // 이미 강하게 뻗어나간 가지 주변에서만 더 세밀한 잔가지가 추가되는 효과를 만들어,
+        // 균일한 노이즈보다 훨씬 "가지치기"에 가까운 느낌을 줍니다.
+        r *= weight;
+
+        value += r * amplitude;
+        weight = clamp(r, 0.0, 1.0);
+        frequency *= 2.0;
+        amplitude *= 0.55;
+    }
+
+    return value;
+}
+
+shader dendritic_veins(
+    point Position = P,
+    float Scale = 3.0,
+    int Octaves = 6,
+    float Intensity = 1.6,
+    color ColorVein = color(1.0, 0.95, 0.4),
+    color ColorBackground = color(0.02, 0.0, 0.05),
+    output color Color = color(0.0, 0.0, 0.0)
+)
+{
+    point p = Position * Scale;
+    float veins = ridge_fbm(p, Octaves);
+    veins = pow(clamp(veins, 0.0, 1.0), 2.0) * Intensity;
+
+    Color = mix(ColorBackground, ColorVein, clamp(veins, 0.0, 1.0));
+    // veins 값이 1.0을 넘는 부분은 추가로 더 밝게 튀도록(HDR 발광) 얹어줍니다.
+    Color += ColorVein * max(veins - 1.0, 0.0);
+}

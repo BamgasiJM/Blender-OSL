@@ -1,0 +1,33 @@
+// four_corner_gradient.osl
+//
+// Bilinear interpolation of four corner colors based on 2D position.
+//
+// Note: "u" and "v" are reserved OSL global variables (surface parametric
+// coordinates), so local variables must NOT be named u/v -- doing so causes
+// an "already declared in this scope" compile error. Named coord_u/coord_v
+// instead.
+//
+// Usage:
+// 1. Shader Editor -> Add Script node -> Mode: External -> File Path
+//    points to this file (relative path recommended, e.g. //shaders/four_corner_gradient.osl).
+// 2. Connect Texture Coordinate node's Generated output to the Position socket.
+// 3. Adjust the four Color* sockets directly in the node editor.
+
+shader four_corner_gradient(
+    point Position = P,
+    color ColorBottomLeft = color(0.9, 0.15, 0.15),
+    color ColorBottomRight = color(0.15, 0.85, 0.25),
+    color ColorTopLeft = color(0.15, 0.25, 0.9),
+    color ColorTopRight = color(0.05, 0.85, 0.15),
+    output closure color BSDF = emission()
+)
+{
+    float coord_u = clamp(Position[0], 0.0, 1.0);
+    float coord_v = clamp(Position[1], 0.0, 1.0);
+
+    color bottom = mix(ColorBottomLeft, ColorBottomRight, coord_u);
+    color top = mix(ColorTopLeft, ColorTopRight, coord_u);
+    color result = mix(bottom, top, coord_v);
+
+    BSDF = result * emission();
+}

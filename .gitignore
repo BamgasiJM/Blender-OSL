@@ -1,0 +1,63 @@
+# Blender files
+*.blend
+*.blend1
+*.blend2
+
+# Compiled OSL shaders
+*.oso
+
+# Blender backup / autosave files
+*.blend~
+*.blend1~
+*.blend2~
+
+# 3D model files
+*.obj
+*.fbx
+*.glb
+*.gltf
+*.abc
+*.ply
+*.stl
+*.dae
+*.3ds
+*.usd
+*.usda
+*.usdc
+*.usdz
+
+# Textures / images
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.tif
+*.tiff
+*.exr
+*.hdr
+*.bmp
+*.tga
+
+# Video / animation
+*.mp4
+*.mov
+*.avi
+*.mkv
+
+# Blender cache
+*.cache
+*.bphys
+*.vdb
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor settings
+.vscode/
+.idea/

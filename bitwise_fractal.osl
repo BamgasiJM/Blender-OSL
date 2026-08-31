@@ -1,0 +1,44 @@
+// 10_bitwise_fractal.osl
+//
+// 정수 좌표에 비트 연산(AND, XOR)을 적용해서 자기유사적인(self-similar) 프랙탈
+// 패턴을 만드는 기법입니다. 노이즈 함수 없이 정수 연산만으로 완벽하게 또렷하고
+// 대비가 강한 기하학적 패턴을 만들 수 있는 것이 특징입니다.
+//
+// - AND 모드: 두 좌표를 비트 단위 AND 연산했을 때 결과가 0인 위치만 칠합니다.
+//   이 규칙을 격자 전체에 적용하면 파스칼의 삼각형을 2로 나눈 나머지(mod 2)와
+//   동일한 패턴이 나타나며, 이는 시에르핀스키 삼각형/카펫과 같은 구조입니다.
+// - XOR 모드: 두 좌표를 비트 단위 XOR 연산합니다. 대각선 대칭을 갖는
+//   "울람-워버튼(Ulam-Warburton)" 스타일의 프랙탈이 나타납니다.
+//
+// [필요 노드]
+// 1. Texture Coordinate 노드의 Generated 출력을 Script 노드의 Position 소켓에 연결
+// 2. Script 노드의 Color 출력을 Emission/Principled BSDF에 연결
+
+shader bitwise_fractal(
+    point Position = P,
+    float Scale = 64.0,
+    int Mode = 0,    // 0 = AND 기반 시에르핀스키 패턴, 1 = XOR 기반 울람-워버튼 패턴
+    color ColorA = color(1.0, 0.05, 0.35),
+    color ColorB = color(0.02, 0.02, 0.05),
+    output color Color = color(0.0, 0.0, 0.0)
+)
+{
+    // Generated 좌표(0~1)를 Scale 배수로 확대한 뒤 정수로 잘라내 격자 인덱스를 만듭니다.
+    int ix = int(Position[0] * Scale);
+    int iy = int(Position[1] * Scale);
+
+    int s;
+    if (Mode == 1) {
+        s = ix ^ iy;
+    } else {
+        s = ix & iy;
+    }
+
+    // s == 0인 위치만 ColorA로 칠합니다. Scale 값을 2의 거듭제곱(32, 64, 128 등)으로
+    // 바꿔가며 렌더링하면 프랙탈이 재귀적으로 세밀해지는 것을 관찰할 수 있습니다.
+    if (s == 0) {
+        Color = ColorA;
+    } else {
+        Color = ColorB;
+    }
+}

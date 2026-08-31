@@ -1,0 +1,26 @@
+// noise()
+
+shader test_noise(
+    float Scale = 5.0,
+    output color Result = 0
+)
+{
+    // P를 noise 함수의 입력 좌표로 사용합니다.
+    //
+    // P는 3차원 좌표이므로 이 noise는
+    // 오브젝트 표면에 단순한 2D 이미지가 아니라
+    // 3D 공간에 존재하는 procedural pattern을 생성합니다.
+    //
+    // Scale이 커지면 noise 패턴이 촘촘해집니다.
+    // Scale이 작아지면 noise 패턴이 넓어집니다.
+
+    point noise_position = P * Scale;
+
+    // Perlin noise를 계산합니다.
+    // 결과값을 float 하나로 받습니다.
+    float n = noise("perlin", noise_position);
+
+    // 동일한 값을 R, G, B에 사용하여
+    // grayscale noise로 표시합니다.
+    Result = color(n);
+}

@@ -1,0 +1,64 @@
+// 03_voronoi_cells.osl
+//
+// 보로노이(Voronoi) / 셀룰러(Cellular) 패턴입니다. 공간에 무작위로 흩뿌린
+// "씨앗점(seed point)"들을 기준으로, 각 위치를 가장 가까운 씨앗점에 속하도록
+// 나누어 칠합니다. 세포, 균열, 돌 표면, 모자이크 텍스처의 기초가 되는 기법입니다.
+//
+// [필요 노드]
+// 1. Texture Coordinate 노드의 Generated 출력을 Script 노드의 Position 소켓에 연결
+//    (Generated를 쓰면 오브젝트를 이동/스케일해도 셀 패턴이 표면에 고정되어 유지됩니다)
+// 2. Script 노드의 Color 출력을 Emission/Principled BSDF에 연결
+// 3. (선택) Distance 출력을 ColorRamp 노드에 연결하면 셀 경계를 강조하는
+//    금(균열) 패턴이나 등고선 형태로 응용할 수 있습니다.
+
+// 정수 셀 좌표 (x, y)를 입력받아, 해당 셀 내부의 임의의 위치(0~1, 0~1)를
+// 반환하는 해시 함수입니다. 셀마다 다른 위치에 씨앗점을 하나씩 배치하는 역할을 합니다.
+point hash2d_to_point(float x, float y)
+{
+    float rx = sin(x * 127.1 + y * 311.7) * 43758.5453123;
+    float ry = sin(x * 269.5 + y * 183.3) * 43758.5453123;
+    rx -= floor(rx);
+    ry -= floor(ry);
+    return point(rx, ry, 0.0);
+}
+
+shader voronoi_cells(
+    point Position = P,
+    float Scale = 6.0,
+    color ColorA = color(0.9, 0.3, 0.2),
+    color ColorB = color(0.2, 0.5, 0.9),
+    output color Color = color(0.0, 0.0, 0.0),
+    output float Distance = 0.0
+)
+{
+    point p = Position * Scale;
+    float cellX = floor(p[0]);
+    float cellY = floor(p[1]);
+    point localP = point(p[0] - cellX, p[1] - cellY, 0.0);
+
+    float minDist = 999.0;
+    float cellHash = 0.0;
+
+    int ix, iy;
+    // 현재 셀뿐 아니라 주변 3x3 = 9개 셀을 모두 검사해야, 셀 경계 부근에서도
+    // 정확한 최근접 씨앗점을 찾을 수 있습니다 (이웃 셀의 씨앗점이 더 가까울 수 있기 때문입니다).
+    for (iy = -1; iy <= 1; iy += 1) {
+        for (ix = -1; ix <= 1; ix += 1) {
+            float neighborX = cellX + ix;
+            float neighborY = cellY + iy;
+            point seed = hash2d_to_point(neighborX, neighborY);
+            point seedWorld = point(ix + seed[0], iy + seed[1], 0.0);
+            float d = length(seedWorld - localP);
+
+            if (d < minDist) {
+                minDist = d;
+                // 최근접 씨앗점이 갱신될 때마다, 그 씨앗점 고유의 색상 인덱스(0~1)도 함께 갱신합니다.
+                float hn = sin(neighborX * 91.3 + neighborY * 47.7) * 43758.5453123;
+                cellHash = hn - floor(hn);
+            }
+        }
+    }
+
+    Distance = minDist;
+    Color = mix(ColorA, ColorB, cellHash);
+}

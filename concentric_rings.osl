@@ -1,0 +1,36 @@
+// 04_concentric_rings.osl
+//
+// 중심점으로부터의 거리(반지름)를 기준으로 동심원 물결 패턴을 만드는 기법입니다.
+// 과녁, 수면 물결, 나이테처럼 중심에서 방사형(radial)으로 퍼지는 패턴의 기초입니다.
+//
+// [필요 노드]
+// 1. Texture Coordinate 노드의 Generated 출력을 Script 노드의 Position 소켓에 연결
+// 2. (선택) 애니메이션을 원하면 Value 노드를 추가하고, 숫자 필드 위에서
+//    #frame/30 을 입력해 드라이버를 건 뒤 Script 노드의 Time 소켓에 연결하면
+//    링이 중심에서 바깥으로(또는 안으로) 흘러나가는 효과를 만들 수 있습니다.
+// 3. Script 노드의 Color 출력을 Emission/Principled BSDF에 연결
+
+shader concentric_rings(
+    point Position = P,
+    float Time = 0.0,
+    float RingFrequency = 20.0,
+    float Speed = 1.0,
+    color ColorA = color(0.1, 0.1, 0.15),
+    color ColorB = color(1.0, 0.8, 0.3),
+    output color Color = color(0.0, 0.0, 0.0)
+)
+{
+    // Generated 좌표는 0~1 범위이므로, 0.5를 빼서 중심을 (0,0,0)으로 옮깁니다.
+    // 점(point) 두 개를 빼면 결과는 방향/거리를 나타내는 벡터(vector)가 됩니다.
+    vector centered = Position - point(0.5, 0.5, 0.5);
+    float radius = length(centered);
+
+    // 반지름에 링 주파수를 곱해 sin 파형을 반지름 방향으로 반복시키고,
+    // Time으로 위상(phase)을 계속 이동시켜 애니메이션 효과를 만듭니다.
+    float wave = sin(radius * RingFrequency - Time * Speed);
+
+    // sin()의 결과 범위(-1~1)를 색을 섞기 좋은 0~1 범위로 정규화합니다.
+    float t = wave * 0.5 + 0.5;
+
+    Color = mix(ColorA, ColorB, t);
+}
