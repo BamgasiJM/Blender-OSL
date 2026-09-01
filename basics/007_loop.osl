@@ -1,0 +1,45 @@
+// [문법/제어 흐름] for 루프
+//
+// basics 폴더는 OSL 문법을 배우기 위한 예제 모음입니다.
+// 이 파일은 "문법/제어 흐름" 카테고리에 속하며,
+// for 루프로 같은 계산을 여러 번 반복하는 방법을 다룹니다.
+//
+// 예제로 여러 옥타브(octave)의 noise를 누적해서
+// fBm(fractal Brownian motion) 패턴을 만듭니다.
+
+shader test_loop(
+    float Scale = 4.0,
+    int Octaves = 5,
+    output color Result = 0
+)
+{
+    point pos = P * Scale;
+
+    float amplitude = 1.0;
+    float frequency = 1.0;
+    float sum = 0.0;
+    float max_amplitude = 0.0;
+
+    // for 루프의 기본 형태:
+    // for (초기화; 조건; 증감) { ... }
+    //
+    // i가 0부터 Octaves - 1까지 반복되며,
+    // 반복할 때마다 더 촘촘한(frequency가 큰) noise를
+    // 더 작은 비중(amplitude)으로 더합니다.
+    for (int i = 0; i < Octaves; i += 1)
+    {
+        float n = noise("perlin", pos * frequency);
+        sum += n * amplitude;
+        max_amplitude += amplitude;
+
+        // 반복마다 주파수는 2배로 커지고,
+        // 진폭은 절반으로 작아집니다.
+        frequency *= 2.0;
+        amplitude *= 0.5;
+    }
+
+    // 누적된 값을 총 진폭으로 나눠 0~1 범위로 정규화합니다.
+    float result = sum / max_amplitude;
+
+    Result = color(result);
+}

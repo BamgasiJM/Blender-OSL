@@ -1,0 +1,36 @@
+// [문법/제어 흐름] if / else - 조건문
+//
+// basics 폴더는 OSL 문법을 배우기 위한 예제 모음입니다.
+// 이 파일은 "문법/제어 흐름" 카테고리에 속하며,
+// if / else 조건문으로 조건에 따라 다른 값을 선택하는 방법을 다룹니다.
+
+shader test_if(
+    float Scale = 10.0,
+    output color Result = 0
+)
+{
+    // u, v 좌표를 Scale 배수로 확대한 뒤
+    // floor()로 정수 부분만 취해서
+    // 현재 위치가 몇 번째 칸인지 계산합니다.
+    int ix = int(floor(u * Scale));
+    int iy = int(floor(v * Scale));
+
+    // 두 정수의 합이 짝수인지 홀수인지에 따라
+    // 서로 다른 색을 선택하면 체크보드 패턴이 됩니다.
+    //
+    // %는 나머지 연산자입니다.
+    // (ix + iy) % 2 == 0 → 짝수 칸
+    // (ix + iy) % 2 != 0 → 홀수 칸
+    int checker = (ix + iy) % 2;
+
+    // if / else의 기본 형태:
+    // if (조건) { ... } else { ... }
+    if (checker == 0)
+    {
+        Result = color(1.0);  // 짝수 칸 → 흰색
+    }
+    else
+    {
+        Result = color(0.0);  // 홀수 칸 → 검은색
+    }
+}

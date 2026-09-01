@@ -1,0 +1,40 @@
+// [문법/제어 흐름] 사용자 정의 함수
+//
+// basics 폴더는 OSL 문법을 배우기 위한 예제 모음입니다.
+// 이 파일은 "문법/제어 흐름" 카테고리에 속하며,
+// 직접 함수를 정의하고 호출하는 방법을 다룹니다.
+//
+// 반복해서 쓰는 계산을 함수로 묶어두면
+// 셰이더 코드를 더 읽기 쉽고 재사용하기 쉽게 만들 수 있습니다.
+
+// remap() : 값을 한 범위에서 다른 범위로 옮기는 함수입니다.
+//
+// 예: remap(0.5, 0.0, 1.0, -1.0, 1.0) → 0.0
+//     remap(1.0, 0.0, 1.0, -1.0, 1.0) → 1.0
+float remap(float value, float in_min, float in_max, float out_min, float out_max)
+{
+    float t = (value - in_min) / (in_max - in_min);
+    return out_min + t * (out_max - out_min);
+}
+
+shader test_function(
+    float Scale = 5.0,
+    output color Result = 0
+)
+{
+    point pos = P * Scale;
+
+    // noise()의 결과는 보통 0~1 범위입니다.
+    float n = noise("perlin", pos);
+
+    // 직접 정의한 remap() 함수를 호출해서
+    // 0~1 범위를 -1~1 범위로 옮긴 뒤,
+    // 다시 색상에 맞는 0~1 범위로 되돌립니다.
+    //
+    // (이 예제 자체는 결과적으로 원래 noise 값과 비슷해지지만,
+    //  함수를 정의하고 호출하는 흐름을 보여주는 것이 목적입니다.)
+    float remapped = remap(n, 0.0, 1.0, -1.0, 1.0);
+    float final_value = remapped * 0.5 + 0.5;
+
+    Result = color(final_value);
+}
