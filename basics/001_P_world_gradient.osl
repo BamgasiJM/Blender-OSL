@@ -1,0 +1,6 @@
+shader world_gradient(
+    output color Color = 0)
+{
+    // x값을 기반으로 0~1 범위의 그라데이션 생성
+    Color = color(P.x * 0.5 + 0.5);
+}

@@ -1,0 +1,8 @@
+shader facing_ratio(
+    output float Fac = 0.0
+)
+{
+    // N과 -I(카메라 방향)의 내적. 0(에지) ~ 1(정면)
+    // abs()를 사용하여 backface에서도 0~1로 작동하게 함
+    Fac = abs(dot(N, -I));
+}

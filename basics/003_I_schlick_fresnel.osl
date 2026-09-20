@@ -1,0 +1,13 @@
+shader schlick_fresnel(
+    float IOR = 1.3,
+    output float Fresnel = 0.0
+)
+{
+    float cos_theta = abs(dot(N, normalize(-I)));
+    
+    // F0 = ((IOR - 1) / (IOR + 1))^2)
+    float F0 = pow((IOR - 1.0) / (IOR + 1.0), 2.0);
+    
+    // Schlick 근사: F = F0 + (1 - F0) * (1 - cos)^5
+    Fresnel = F0 + (1.0 - F0) * pow(1.0 - cos_theta, 5.0);
+}

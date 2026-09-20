@@ -1,0 +1,13 @@
+shader object_top_mask(
+    output float Mask = 0.0)
+{
+    // 월드 공간의 Normal 벡터를 오브젝트의 로컬 공간으로 변환
+    // 모델 로컬 좌표계를 기준으로 표면의 방향을 측정
+    normal Nobj = transform("object", N);
+    
+    // 로컬 Z축(위쪽) 값을 기반으로 마스크 생성
+    // Z값이 1에 가까우면(표면이 위를 향함) → Mask = 1 (흰색)
+    // Z값이 0에 가까우면(표면이 옆을 향함) → Mask = 0 (검정색)
+    // Z값이 음수면(표면이 아래를 향함) → Mask = 0 (검정색)
+    Mask = clamp(Nobj.z, 0.0, 1.0);
+}

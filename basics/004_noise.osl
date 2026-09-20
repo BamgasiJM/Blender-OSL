@@ -22,5 +22,5 @@ shader test_noise(
 
     // 동일한 값을 R, G, B에 사용하여
     // grayscale noise로 표시합니다.
-    Result = color(n);
+    Result = color(0,n,n);
 }

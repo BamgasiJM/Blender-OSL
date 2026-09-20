@@ -1,0 +1,32 @@
+shader procedural_bump(
+    float Scale = 10.0,
+    float Strength = 0.1,
+    output color Color = 0
+)
+{
+    // 노이즈의 그래디언트를 유한 차분(finite difference)으로 직접 계산
+    // 실제 작업에서는 bump() 함수나 Normal Map 노드가 더 안정적
+    float eps = 0.01;
+    point p = P * Scale;
+
+    // 기준점(p)과 x/y/z 각 축으로 아주 작게(eps) 이동한 점에서 노이즈 값을 각각 샘플링,
+    // 그 차이를 eps로 나누어 근사 미분값을 얻음.
+    float n_center = noise("perlin", p);
+    float n_dx = noise("perlin", p + point(eps, 0, 0));
+    float r_dy = noise("perlin", p + point(0, eps, 0));
+    float n_dz = noise("perlin", p + point(0, 0, eps));
+
+    vector noise_grad = vector(
+        (n_dx - n_center) / eps,
+        (n_dy - n_center) / eps,
+        (n_dz - n_center) / eps
+    );
+
+    // 이렇게 얻은 noise_grad 벡터를 기존처럼 N에 더하고 normalize()
+    normal pertubed_N = normalize(N + (noise_grad * Strength));
+
+    // 왜곡된 노멀로 조명 계산 시뮬레이션
+    float light_intensity = max(0.0, dot(perturbed_N, vector(0, 0, 1)));
+    Color = color(light_intensity);
+
+}

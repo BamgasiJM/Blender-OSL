@@ -1,0 +1,8 @@
+shader facing_ratio (
+    output float Fac = 0.0
+)
+{
+    // 시선 방향(-I)과 노멀(N)의 내적
+    // abs()로 뒷면에서도 0 ~ 1로 작동
+    Fac = abs(dot(N, normalize(-I)));
+}
